@@ -1,3 +1,1 @@
 ROOT=.
-TARGET=nucleo_f767zi
-TOOLCHAIN=GCC_ARM

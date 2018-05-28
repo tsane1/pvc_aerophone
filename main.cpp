@@ -18,10 +18,10 @@
 
 #define EVER		;;
 #define T_SYNC		7		/* ms */
-#define T_NOTE		1000	/* ms */
+#define T_NOTE		500		/* ms */
 
-DriverBoard left(PC_8, PC_9, PC_10, PC_11);
-DriverBoard right(PC_6, PB_15, PB_13, PB_12);
+DriverBoard right(PC_8, PC_9, PC_10, PC_11);
+DriverBoard left(PC_6, PB_15, PB_13, PB_12);
 
 uint32_t swap_endian ( uint32_t number )
 {
@@ -71,9 +71,6 @@ static void osc_dispatch(OSCMessage* msg) {
 }
 
 int main() {
-	//left.pulse_all();
-	//right.pulse_all();
-	
 	EthernetInterface eth; eth.connect();
 	printf("Connected at %s\r\n", eth.get_ip_address());
 
@@ -88,11 +85,9 @@ int main() {
 
 	Timer sync_timer; sync_timer.start();
 	Timer note_timer; note_timer.start();
-	int elapsed = 0; int pitch = 0;
+	int elapsed = 0; int pitch = 36;
 
 	for(EVER) {		// I'm hilarious
-		elapsed = sync_timer.read_ms();
-
 		// Poll for an incoming OSCMessage and dispatch it
 		size_or_error = osc.receive(msg);
 		if(size_or_error == NSAPI_ERROR_WOULD_BLOCK || size_or_error == 0) /* Skip */;
@@ -101,15 +96,20 @@ int main() {
 		}
 		else osc_dispatch(msg);
 
-		if(elapsed > T_NOTE) {
-			left.play(pitch++, 127);
-			if(pitch > 71) pitch = 60;
+		elapsed = note_timer.read_ms();
+		if(elapsed >= T_NOTE) {
+			if(pitch < 48) left.play(pitch++, 127);
+			else right.play(pitch++, 127);
+
+			if(pitch > 60) pitch = 36;
 			note_timer.reset();
 		}
 
 		// Synchronize the internal state out to the DriverBoard pins at the desired frequency
+		elapsed = sync_timer.read_ms();
 		if(elapsed >= T_SYNC) {
 			left.sync(elapsed);
+			right.sync(elapsed);
 			sync_timer.reset();
 		}
 	}

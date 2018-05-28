@@ -40,7 +40,7 @@ public:
 	 */
 	DriverBoard(PinName clk, PinName en, PinName rst, PinName ser):
 		p_clk(DigitalOut(clk)), p_en(DigitalOut(en)), p_rst(DigitalOut(rst)), p_ser(DigitalOut(ser))
-{/* Empty */}
+	{/* Empty */}
 
 	/** Initialize the object and enable connected DriverBoard */
 	void init() {

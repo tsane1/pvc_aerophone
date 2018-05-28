@@ -20,8 +20,8 @@
 #define T_SYNC		7		/* ms */
 #define T_NOTE		500		/* ms */
 
-DriverBoard right(PC_8, PC_9, PC_10, PC_11);
-DriverBoard left(PC_6, PB_15, PB_13, PB_12);
+DriverBoard left(PC_8, PC_9, PC_10, PC_11);
+DriverBoard right(PC_6, PB_15, PB_13, PB_12);
 
 uint32_t swap_endian ( uint32_t number )
 {

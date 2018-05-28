@@ -3,9 +3,11 @@
 # Eclipse
 .cproject
 .project
+.pydevproject
 
-# Build directory
+# Directories
 BUILD/
+DriverBoard/
 
 # MBED stuff
 mbed-*

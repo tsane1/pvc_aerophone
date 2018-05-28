@@ -226,13 +226,13 @@ public:
 	 * @return The number of bytes received, or an error code
 	 */
 	nsapi_size_or_error_t receive(OSCMessage* msg) {
-		char* buffer = (char*) malloc(OSC_MSG_SIZE);
+		char buff[OSC_MSG_SIZE];
+		char* buffer = (char*) buff;
 		char* start = buffer;
 		unsigned int offset;
 		int padding;
 
-		nsapi_size_or_error_t recv = this->udp.recvfrom(&this->controller, buffer, OSC_MSG_SIZE);
-		//printf("recieved %d bytes\n", recv);
+		nsapi_size_or_error_t recv = this->udp.recvfrom(NULL, buffer, OSC_MSG_SIZE);
 		if(recv <= 0) return recv;
 
 		// Clear the struct
@@ -265,10 +265,6 @@ public:
 		// Blindly copy everything else up to the end of the received byte stream
 		memcpy(msg->data, buffer, recv - address_length - format_length);
 		msg->data_size = recv - address_length - format_length;
-
-		// What I wouldn't give for C to have automatic garbage collection
-		free(start);
-
 		return recv;
 	}
 

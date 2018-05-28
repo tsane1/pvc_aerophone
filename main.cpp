@@ -71,6 +71,11 @@ static void osc_dispatch(OSCMessage* msg) {
 }
 
 int main() {
+	// Enable the DriverBoards (drive RST to high)
+	left.init(); right.init();
+	left.sync(-2);
+	right.sync(-2);
+
 	EthernetInterface eth; eth.connect();
 	printf("Connected at %s\r\n", eth.get_ip_address());
 
@@ -80,9 +85,6 @@ int main() {
 	OSCMessage* msg = (OSCMessage*) malloc(sizeof(OSCMessage));
 	nsapi_size_or_error_t size_or_error;
 
-	// Enable the DriverBoards (drive RST to high)
-	left.init(); right.init();
-
 	Timer sync_timer; sync_timer.start();
 	Timer note_timer; note_timer.start();
 	int elapsed = 0; int pitch = 36;
@@ -90,13 +92,14 @@ int main() {
 	for(EVER) {		// I'm hilarious
 		// Poll for an incoming OSCMessage and dispatch it
 		size_or_error = osc.receive(msg);
-		if(size_or_error == NSAPI_ERROR_WOULD_BLOCK || size_or_error == 0) /* Skip */;
-		else if(size_or_error < 0) {
+		if(size_or_error == NSAPI_ERROR_WOULD_BLOCK) /* Skip */;
+		else if(size_or_error <= 0) {
 			printf("ERROR! %d\r\n", size_or_error);
 		}
 		else osc_dispatch(msg);
 
 		elapsed = note_timer.read_ms();
+		/*
 		if(elapsed >= T_NOTE) {
 			if(pitch < 48) left.play(pitch++, 127);
 			else right.play(pitch++, 127);
@@ -104,6 +107,7 @@ int main() {
 			if(pitch > 60) pitch = 36;
 			note_timer.reset();
 		}
+		*/
 
 		// Synchronize the internal state out to the DriverBoard pins at the desired frequency
 		elapsed = sync_timer.read_ms();

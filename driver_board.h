@@ -106,6 +106,21 @@ public:
 		// Enable the shift register output on the pins
 		this->p_en = 1; this->p_en = 0;
 	}
+
+	void pulse_all() {
+		this->p_ser = 1;
+		this->p_clk = 1;
+		this->p_clk = 0;
+		for(int i = 0; i < 11; i++) {
+			this->p_ser = 1;
+		this->p_clk = 1;
+		this->p_clk = 0;
+		}
+		this->p_en = 1; this->p_en = 0;
+		wait_ms(100);
+		this->p_rst = 1;
+		this->p_rst = 0;
+	}
 };
 
 #endif /* DRIVER_BOARD_H_ */

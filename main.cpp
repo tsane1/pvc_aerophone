@@ -18,6 +18,7 @@
 
 #define EVER		;;
 #define T_SYNC		7		/* ms */
+#define T_NOTE		1000	/* ms */
 
 DriverBoard left(PC_8, PC_9, PC_10, PC_11);
 DriverBoard right(PC_6, PB_15, PB_13, PB_12);
@@ -70,6 +71,9 @@ static void osc_dispatch(OSCMessage* msg) {
 }
 
 int main() {
+	//left.pulse_all();
+	//right.pulse_all();
+	
 	EthernetInterface eth; eth.connect();
 	printf("Connected at %s\r\n", eth.get_ip_address());
 
@@ -98,7 +102,7 @@ int main() {
 		else osc_dispatch(msg);
 
 		if(elapsed > T_NOTE) {
-			left.play(pitch++);
+			left.play(pitch++, 127);
 			if(pitch > 71) pitch = 60;
 			note_timer.reset();
 		}

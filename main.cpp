@@ -22,10 +22,23 @@
 DriverBoard left(PC_8, PC_9, PC_10, PC_11);
 DriverBoard right(PC_6, PB_15, PB_13, PB_12);
 
+uint32_t swap_Endian ( uint32_t number )
+{
+   uint32_t byte0, byte1, byte2, byte3;
+   byte0 = (number & 0x000000FF) >> 0;
+   byte1 = (number & 0x0000FF00) >> 8;
+   byte2 = (number & 0x00FF0000) >> 16;
+   byte3 = (number & 0xFF000000) >> 24;
+   return ((byte0<<24) | (byte1 << 16) | (byte2 << 8) | (byte3 << 0));
+}
+
 /**
  * Dispatcher function for OSCMessages that calls the proper routine immediately
  */
 static void osc_dispatch(OSCMessage* msg) {
+	printf("msg addr: %s\n", msg->address);
+	printf("msg format: %s\n", msg->format);
+	printf("msg data: %s\n", msg->data);
 	// Ensure that this message is addressed to this instrument
 	char* token = strtok(msg->address, "/");
 	if(strcmp(token, INSTRUMENT_NAME) != 0) {
@@ -46,6 +59,8 @@ static void osc_dispatch(OSCMessage* msg) {
 		memcpy(&pitch, msg->data, sizeof(uint32_t));
 		memcpy(&velocity, msg->data + sizeof(uint32_t), sizeof(uint32_t));
 
+		pitch = swap_Endian(pitch);
+		velocity = swap_Endian(velocity);
 		printf("play(%d, %d)\r\n", pitch, velocity);
 	}
 	else {
@@ -75,8 +90,8 @@ int main() {
 
 		// Poll for an incoming OSCMessage and dispatch it
 		size_or_error = osc.receive(msg);
-		if(size_or_error == NSAPI_ERROR_WOULD_BLOCK) /* Skip */;
-		else if(size_or_error <= 0) {
+		if(size_or_error == NSAPI_ERROR_WOULD_BLOCK || size_or_error == 0) /* Skip */;
+		else if(size_or_error < 0) {
 			printf("ERROR! %d\r\n", size_or_error);
 		}
 		else osc_dispatch(msg);

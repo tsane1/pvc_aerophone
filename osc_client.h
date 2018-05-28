@@ -19,7 +19,7 @@
 #include "SocketAddress.h"
 
 #define BROADCAST_IP			"192.168.2.255"
-#define OSC_PORT				1234
+#define OSC_PORT				8000
 #define INSTRUMENT_NAME			"pvc_aerophone"
 #define OSC_MSG_SIZE			256
 
@@ -227,9 +227,11 @@ public:
 	nsapi_size_or_error_t receive(OSCMessage* msg) {
 		char* buffer = (char*) malloc(OSC_MSG_SIZE);
 		char* start = buffer;
+		unsigned int offset;
+		int padding;
 
 		nsapi_size_or_error_t recv = this->udp.recvfrom(&this->controller, buffer, OSC_MSG_SIZE);
-		printf("recieved %d bytes\n", recv);
+		//printf("recieved %d bytes\n", recv);
 		if(recv <= 0) return recv;
 
 		// Clear the struct
@@ -240,10 +242,24 @@ public:
 		strcpy(msg->address, buffer);
 		buffer = buffer + address_length;
 
+		offset = buffer - start;
+		padding = 4 - (offset % 4);
+		if (offset % 4 != 0) {
+			printf("Dealing with padding %d\n", padding);
+			buffer += padding;
+		}
+
 		// After advancing to that point, the next string extracted by strcpy will be the type tag
 		int format_length = strlen(buffer) + 1;
 		strcpy(msg->format, buffer);
 		buffer = buffer + format_length;
+
+		offset = buffer - start;
+		padding = 4 - (offset % 4);
+		if (offset % 4 != 0) {
+			printf("Dealing with padding %d\n", padding);
+			buffer += padding;
+		}
 
 		// Blindly copy everything else up to the end of the received byte stream
 		memcpy(msg->data, buffer, recv - address_length - format_length);

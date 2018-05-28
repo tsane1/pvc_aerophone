@@ -22,7 +22,7 @@
 DriverBoard left(PC_8, PC_9, PC_10, PC_11);
 DriverBoard right(PC_6, PB_15, PB_13, PB_12);
 
-uint32_t swap_Endian ( uint32_t number )
+uint32_t swap_endian ( uint32_t number )
 {
    uint32_t byte0, byte1, byte2, byte3;
    byte0 = (number & 0x000000FF) >> 0;
@@ -36,9 +36,6 @@ uint32_t swap_Endian ( uint32_t number )
  * Dispatcher function for OSCMessages that calls the proper routine immediately
  */
 static void osc_dispatch(OSCMessage* msg) {
-	printf("msg addr: %s\n", msg->address);
-	printf("msg format: %s\n", msg->format);
-	printf("msg data: %s\n", msg->data);
 	// Ensure that this message is addressed to this instrument
 	char* token = strtok(msg->address, "/");
 	if(strcmp(token, INSTRUMENT_NAME) != 0) {
@@ -59,9 +56,12 @@ static void osc_dispatch(OSCMessage* msg) {
 		memcpy(&pitch, msg->data, sizeof(uint32_t));
 		memcpy(&velocity, msg->data + sizeof(uint32_t), sizeof(uint32_t));
 
-		pitch = swap_Endian(pitch);
-		velocity = swap_Endian(velocity);
-		printf("play(%d, %d)\r\n", pitch, velocity);
+		pitch = swap_endian(pitch);
+		velocity = swap_endian(velocity);
+
+		if(pitch < 48) left.play(pitch, velocity);
+		else if(pitch < 60) right.play(pitch, velocity);
+		else /* SKIP */ ;	// TODO: Handle C4 separately
 	}
 	else {
 		printf("Unrecognized address %s\r\n", token);
@@ -83,7 +83,8 @@ int main() {
 	left.init(); right.init();
 
 	Timer sync_timer; sync_timer.start();
-	int elapsed = 0;
+	Timer note_timer; note_timer.start();
+	int elapsed = 0; int pitch = 0;
 
 	for(EVER) {		// I'm hilarious
 		elapsed = sync_timer.read_ms();
@@ -95,6 +96,12 @@ int main() {
 			printf("ERROR! %d\r\n", size_or_error);
 		}
 		else osc_dispatch(msg);
+
+		if(elapsed > T_NOTE) {
+			left.play(pitch++);
+			if(pitch > 71) pitch = 60;
+			note_timer.reset();
+		}
 
 		// Synchronize the internal state out to the DriverBoard pins at the desired frequency
 		if(elapsed >= T_SYNC) {

@@ -145,6 +145,7 @@ static OSCMessage* build_osc_message(char* address, char* format, ...) {
  * 
  * @param msg 		The message to flatten
  * @param len_ptr (out)	The length of the generated buffer is stored here. Always a multiple of 4.
+ * 
  * @return A buffer filled with the flattened contents of the given OSCMessage.
  */
 byte* flatten_oscmessage(OSCMessage* msg, int* len_ptr) {
@@ -306,8 +307,6 @@ public:
 		// Reset broadcast and blocking for this socket
 		this->udp_broadcast.set_broadcast(false);
 		this->udp_broadcast.set_blocking(false);
-
-		printf("Waiting to recieve a message\n");
 		
 		char* buffer = (char*) malloc(OSC_MSG_SIZE);
 

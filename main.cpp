@@ -20,9 +20,15 @@
 #define T_SYNC		7		/* ms */
 #define T_NOTE		500		/* ms */
 
-DriverBoard left(PC_8, PC_9, PC_10, PC_11);
-DriverBoard right(PC_6, PB_15, PB_13, PB_12);
+// Mapping of the note positions to their MIDI note values
+static int note_map[] = {
 
+};
+
+DriverBoard left(PC_8, PC_9, PC_10, PC_11);
+DriverBoard right(PF_13, PE_9, PE_11, PF_14);
+
+/** Swap the bytes of the given 4-byte integer */
 uint32_t swap_endian ( uint32_t number )
 {
    uint32_t byte0, byte1, byte2, byte3;
@@ -73,8 +79,6 @@ static void osc_dispatch(OSCMessage* msg) {
 int main() {
 	// Enable the DriverBoards (drive RST to high)
 	left.init(); right.init();
-	left.sync(-2);
-	right.sync(-2);
 
 	EthernetInterface eth; eth.connect();
 	printf("Connected at %s\r\n", eth.get_ip_address());

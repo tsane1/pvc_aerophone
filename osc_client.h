@@ -18,21 +18,21 @@
 #include "UDPSocket.h"
 #include "SocketAddress.h"
 
-#define BROADCAST_IP			"192.168.2.255"
-#define OSC_PORT				8000
-#define INSTRUMENT_NAME			"pvc_aerophone"
-#define OSC_MSG_SIZE			256
-
-typedef char byte;
-
 // An ugly hack from a hero at https://os.mbed.com/questions/75208/Broadcast-in-mbedos-5/ to get
 // around the fact that mbed-os v5 doesn't have a method for setting a UDPSocket as a broadcasting
 // socket (v2 had this functionality)
 // -----------------------------------------------
 #include "lwip/ip.h"
 #include "lwip/api.h"
+
+#define BROADCAST_IP			"192.168.2.255"
+#define OSC_PORT				8000
+#define INSTRUMENT_NAME			"pvc_aerophone"
+#define OSC_MSG_SIZE			256
+
+typedef char byte;
  
-//to do this is terribly wrong :D because this struct is not visible to the api
+// Thanks mbed for requiring this ugly hack
 struct lwip_socket {
   bool in_use;
   struct netconn *conn;
@@ -43,21 +43,19 @@ struct lwip_socket {
   void *data;
 };
  
-class UDPBroadcastSocket: public UDPSocket
-{
+class UDPBroadcastSocket: public UDPSocket {
 public: //or you can make it private/protected and call it in the constructor
 	template<typename S >
-		UDPBroadcastSocket(S* stack) : UDPSocket(stack) { }
- void set_broadcast(bool broadcast) {
-  //extreme violence, because we dont have yet the broadcast feature exposed in the new mbed-os lwip impl
-  struct lwip_socket *s = (struct lwip_socket *)_socket;
-  if (broadcast)
-    s->conn->pcb.ip->so_options |= SOF_BROADCAST;
-  else
-    s->conn->pcb.ip->so_options &= ~SOF_BROADCAST;
- }
+	UDPBroadcastSocket(S* stack) : UDPSocket(stack) { }
+
+	void set_broadcast(bool broadcast) {
+		struct lwip_socket *s = (struct lwip_socket *)_socket;
+			if (broadcast)
+				s->conn->pcb.ip->so_options |= SOF_BROADCAST;
+			else
+				s->conn->pcb.ip->so_options &= ~SOF_BROADCAST;
+	}
 };
-// -----------------------------------------------
 
 enum {
 	OSC_SIZE_ADDRESS = 64,
@@ -148,7 +146,7 @@ static OSCMessage* build_osc_message(char* address, char* format, ...) {
  * 
  * @return A buffer filled with the flattened contents of the given OSCMessage.
  */
-byte* flatten_oscmessage(OSCMessage* msg, int* len_ptr) {
+byte* flatten_osc_message(OSCMessage* msg, int* len_ptr) {
 	// Calculate the length of the buffer to send.
 	// Note the use of OSC_SIZE instead of strlen here - it's important!
 	// The length is guaranteed to be a multiple of 4 because OSC_SIZE will always return a
@@ -208,7 +206,7 @@ public:
 	 */
 	nsapi_size_or_error_t send(OSCMessage* msg) {
 		int length = 0;
-		byte* stream = flatten_oscmessage(msg, &length);
+		byte* stream = flatten_osc_message(msg, &length);
 		printf("Sending UDP data\n");
 		// Send out the stream and then free it
 		nsapi_size_or_error_t out = this->udp.sendto(this->controller, stream, length);
@@ -226,8 +224,7 @@ public:
 	 * @return The number of bytes received, or an error code
 	 */
 	nsapi_size_or_error_t receive(OSCMessage* msg) {
-		char buff[OSC_MSG_SIZE];
-		char* buffer = (char*) buff;
+		char buff[OSC_MSG_SIZE]; char* buffer = (char*) buff;
 		char* start = buffer;
 		unsigned int offset;
 		int padding;
@@ -245,10 +242,7 @@ public:
 
 		offset = buffer - start;
 		padding = 4 - (offset % 4);
-		if (offset % 4 != 0) {
-			printf("Dealing with padding %d\n", padding);
-			buffer += padding;
-		}
+		if (offset % 4 != 0) buffer += padding;
 
 		// After advancing to that point, the next string extracted by strcpy will be the type tag
 		int format_length = strlen(buffer) + 1;
@@ -257,10 +251,7 @@ public:
 
 		offset = buffer - start;
 		padding = 4 - (offset % 4);
-		if (offset % 4 != 0) {
-			printf("Dealing with padding %d\n", padding);
-			buffer += padding;
-		}
+		if (offset % 4 != 0) buffer += padding;
 
 		// Blindly copy everything else up to the end of the received byte stream
 		memcpy(msg->data, buffer, recv - address_length - format_length);
@@ -289,7 +280,7 @@ public:
 		SocketAddress broadcast(BROADCAST_IP, OSC_PORT);
 		
 		int length = 0;
-		byte* msg_buf = flatten_oscmessage(msg, &length);
+		byte* msg_buf = flatten_osc_message(msg, &length);
 		
 		nsapi_size_or_error_t size_or_error = this->udp_broadcast.sendto(broadcast, msg_buf, length);
 		if(size_or_error < 0) {

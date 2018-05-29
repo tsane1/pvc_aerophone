@@ -55,6 +55,9 @@ public:
 
 		// Drive reset high to enable board
 		this->p_rst = 1;
+
+		// Sync the 0-state pins to the DriverBoards
+		this->sync(OUTPUT_PIN_IDLE);
 	}
 
 	/** Queue up the note to be set out to the output pins */

@@ -22,6 +22,7 @@ typedef char byte;
 typedef struct {
 	byte state;			// The current state of the pin (ON or OFF)
 	int ms_elapsed;		// The number of elapsed milliseconds since last update
+	int ms_ontime;
 } OutputPin;
 
 class DriverBoard {
@@ -65,6 +66,7 @@ public:
 		int i = (int) pitch % 12;
 		this->outputs[i].state = 1;
 		this->outputs[i].ms_elapsed = OUTPUT_PIN_UPDATE;
+		this->outputs[i].ms_ontime = velocity;
 	}
 
 	/**
@@ -89,7 +91,8 @@ public:
 
 			default:
 				// If time's up, turn off the pin
-				if(pin.ms_elapsed >= STRIKE_DELAY) {
+				//if(pin.ms_elapsed >= STRIKE_DELAY) {
+				if(pin.ms_elapsed >= pin.ms_ontime) {
 					pin.state = 0;
 					pin.ms_elapsed = OUTPUT_PIN_IDLE;
 				}

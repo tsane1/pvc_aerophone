@@ -66,9 +66,13 @@ static void osc_dispatch(OSCMessage* msg) {
 		pitch = swap_endian(pitch);
 		velocity = swap_endian(velocity);
 
-		if(pitch < 48) left.play(pitch, velocity);
-		else if(pitch < 60) right.play(pitch, velocity);
-		else /* SKIP */ ;	// TODO: Handle C4 separately
+		if(pitch < 48 && pitch >= 36) {
+			left.play(pitch, velocity);
+		}
+		else if(pitch < 60 && pitch >= 48) {
+			right.play(pitch, velocity);
+		}
+		else /* SKIP */ {} ;	// TODO: Handle C4 separately
 	}
 	else {
 		printf("Unrecognized address %s\r\n", token);
@@ -90,7 +94,7 @@ int main() {
 	nsapi_size_or_error_t size_or_error;
 
 	Timer sync_timer; sync_timer.start();
-	Timer note_timer; note_timer.start();
+	//Timer note_timer; note_timer.start();
 	int elapsed = 0; int pitch = 36;
 
 	for(EVER) {		// I'm hilarious
@@ -102,8 +106,8 @@ int main() {
 		}
 		else osc_dispatch(msg);
 
-		elapsed = note_timer.read_ms();
 		/*
+		elapsed = note_timer.read_ms();
 		if(elapsed >= T_NOTE) {
 			if(pitch < 48) left.play(pitch++, 127);
 			else right.play(pitch++, 127);
